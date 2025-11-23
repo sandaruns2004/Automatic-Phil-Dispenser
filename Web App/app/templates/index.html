@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Medicine Reminder Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+  background: linear-gradient(to right, #e3f2fd, #f8f9fa);
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar {
+  background-color: #0d6efd !important;
+}
+
+.dashboard-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 1.5rem;
+}
+
+.dashboard-left {
+  flex: 2;
+  min-width: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  padding: 30px;
+}
+
+.dashboard-left img {
+  width: 180px;
+  margin-right: 30px;
+}
+
+.dashboard-right {
+  flex: 1;
+  min-width: 300px;
+}
+
+.patient-card {
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  padding: 20px;
+  height: 100%;
+}
+
+.table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 40px;
+  color: #6c757d;
+}
+
+.medicine-card {
+  border: none;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.table thead th {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f1f7ff;
+  transition: background 0.2s ease-in-out;
+}
+
+.badge {
+  font-size: 0.9rem;
+}
+
+.btn-dispense {
+  transition: 0.2s ease;
+}
+
+.table-row-hover:hover {
+  background-color: #f8f9fa !important;
+  transform: scale(1.01);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Mobile & Tablet Responsiveness */
+@media (max-width: 992px) {
+  .dashboard-section {
+    flex-direction: column;
+  }
+
+  .dashboard-left {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .dashboard-left img {
+    margin: 0 0 20px 0;
+    width: 140px;
+  }
+
+  .dashboard-right {
+    min-width: 100%;
+    margin-top: 20px;
+  }
+
+  .table {
+    font-size: 0.85rem;
+  }
+
+  .btn-dispense {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+  }
+
+  .card-header h4 {
+    font-size: 1rem;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .dashboard-left {
+    padding: 15px;
+  }
+
+  .dashboard-left img {
+    width: 120px;
+  }
+
+  .btn-dispense {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+
+  .table thead th, 
+  .table tbody td {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .card-header h4 {
+    font-size: 0.9rem;
+  }
+
+  .badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+}
+
+.btn-dispense:hover {
+  transform: scale(1.05);
+}
+
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold mx-4" href="#"> Medicine Reminder</a>
+    <div class="d-flex gap-2">
+  <button class="btn btn-light text-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#addMedicineModal">
+    + Add Medicine
+  </button>
+  <button class="btn btn-outline-light fw-semibold" data-bs-toggle="modal" data-bs-target="#updateTimeModal">
+    + Update Time
+  </button>
+</div>
+
+  </div>
+</nav>
+
+<!-- Flash Messages -->
+<div class="container mt-3">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      {% set alert_class = {
+          'success': 'alert-success',
+          'error': 'alert-danger',
+          'warning': 'alert-warning',
+          'info': 'alert-info'
+        }[category] if category in ['success','error','warning','info'] else 'alert-primary' %}
+
+      {% set icon_class = {
+          'success': 'bi bi-check-circle-fill',
+          'error': 'bi bi-x-circle-fill',
+          'warning': 'bi bi-exclamation-triangle-fill',
+          'info': 'bi bi-info-circle-fill'
+        }[category] if category in ['success','error','warning','info'] else 'bi bi-bell-fill' %}
+
+      <div class="alert {{ alert_class }} alert-dismissible fade show rounded-3 shadow-sm d-flex align-items-center" role="alert">
+        <i class="{{ icon_class }} me-2 fs-5"></i>
+        <div>{{ message }}</div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+
+<!-- Dashboard Section -->
+<div class="container mt-4">
+  <div class="dashboard-section">
+    
+    <!-- Left: Illustration + Summary -->
+    <div class="dashboard-left">
+      <img src="https://cdn-icons-png.flaticon.com/512/2927/2927347.png" alt="Medicine Illustration">
+      <div>
+        <h4 class="text-primary fw-bold">Welcome to Medicine Reminder</h4>
+        <p class="text-muted">
+          Manage all your medicines, track patient information, and ensure doses are taken on time. 
+          Stay organized and improve health monitoring easily from this dashboard.
+        </p>
+        <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addMedicineModal">Add New Medicine</button>
+      </div>
+    </div>
+
+<!-- Right: Patient Info -->
+<div class="dashboard-right">
+  <div class="card shadow-sm border-0 patient-card p-3">
+    <h5 class="text-primary fw-bold mb-3"><i class="bi bi-person-circle me-1"></i> Patient Info</h5>
+
+    {% if patients and patients|length > 0 %}
+      <p><strong>Name:</strong> John Doe</p>
+      <p><strong>Age:</strong> 35</p>
+      <p><strong>Condition:</strong> Hypertension</p>
+      <p><strong>Contact:</strong> +1 234 567 890</p>
+    {% else %}
+      <p class="text-muted">No patient data available.</p>
+    {% endif %}
+  </div>
+</div>
+
+
+  </div>
+</div>
+
+<!-- Medicine Table -->
+<div class="container my-5">
+  <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+    <div class="card-header bg-gradient bg-primary text-white d-flex justify-content-between align-items-center py-3 px-4">
+      <h4 class="mb-0 fw-semibold"><i class="bi bi-capsule me-2"></i>Medicine Schedule</h4>
+      <span class="badge bg-light text-dark fs-6 px-3 py-2 rounded-pill">
+        {{ medicines|length }} Active
+      </span>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle text-center mb-2">
+          <thead class="bg-light text-primary border-bottom fw-semibold">
+            <tr>
+              <th>ID</th>
+              <th>Medicine</th>
+              <th>Dosage</th>
+              <th>Remaining</th>
+              <th>Times</th>
+              <th>Latest Status</th>
+              <th>Manual</th>
+            </tr>
+          </thead>
+
+          <tbody class="text-secondary">
+            {% for med in medicines %}
+            <tr class="table-row-hover">
+              <td class="fw-semibold text-dark">{{ med.cartridge_id }}</td>
+              <td class="fw-semibold text-capitalize">{{ med.medicine_name }}</td>
+              <td>{{ med.dosage }}</td>
+
+              <!-- Remaining -->
+              <td>
+                {% if med.remaining_quantity <= 5 %}
+                  <span id="remaining-{{ med.id }}" class="badge bg-danger text-white px-3 py-2 shadow-sm">
+                    <i class="bi bi-exclamation-circle"></i> {{ med.remaining_quantity }}
+                  </span>
+                {% else %}
+                  <span id="remaining-{{ med.id }}" class="badge bg-success text-white px-3 py-2 shadow-sm">
+                    <i class="bi bi-capsule"></i> {{ med.remaining_quantity }}
+                  </span>
+                {% endif %}
+              </td>
+              
+              <td>
+  {% if med.id in med_schedules and med_schedules[med.id] %}
+    {% for t in med_schedules[med.id] %}
+      <span class="badge bg-light text-dark px-2 py-1 m-1 shadow-sm">{{ t }}</span>
+    {% endfor %}
+  {% else %}
+    <span class="text-muted">No Times</span>
+  {% endif %}
+</td>
+
+              <!-- Status -->
+              <td>
+                {% if med.last_action == "Pending" %}
+                  <span class="badge bg-warning text-dark px-3 py-2 shadow-sm">
+                    <i class="bi bi-clock"></i> Pending
+                  </span>
+                {% elif med.last_action == "Dispensed" %}
+                  <span class="badge bg-success text-white px-3 py-2 shadow-sm">
+                    <i class="bi bi-check-circle"></i> Dispensed
+                  </span>
+                {% elif med.last_action == "Completed" %}
+                  <span class="badge bg-secondary text-white px-3 py-2 shadow-sm">
+                    <i class="bi bi-check2-all"></i> Completed
+                  </span>
+                {% elif med.last_action == "Low Stock" %}
+                  <span class="badge bg-danger text-white px-3 py-2 shadow-sm">
+                    <i class="bi bi-exclamation-triangle"></i> Low Stock
+                  </span>
+                {% else %}
+                  <span class="badge bg-info text-dark px-3 py-2 shadow-sm">
+                    <i class="bi bi-info-circle"></i> {{ med.last_action }}
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- Manual Dispense -->
+              <td>
+  <form method="POST" action="{{ url_for('main.dispense_medicine') }}" class="d-inline">
+    <input type="hidden" name="cartridge_num" value="{{ med.cartridge_id }}">
+    <button type="submit" 
+            class="btn btn-outline-primary btn-sm rounded-pill shadow-sm px-3 py-1"
+            {% if med.remaining_quantity < 1 %} disabled {% endif %}>
+      <i class="bi bi-play-circle me-1"></i> Dispense
+    </button>
+  </form>
+</td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Add Medicine Modal -->
+<div class="modal fade" id="addMedicineModal" tabindex="-1" aria-labelledby="addMedicineModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      
+      <div class="modal-header bg-gradient bg-primary text-white">
+        <h5 class="modal-title fw-semibold" id="addMedicineModalLabel">
+          <i class="bi bi-capsule me-2"></i> Add New Medicine
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form id="addMedicineForm" action="{{ url_for('main.add_medicine') }}" method="POST">
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Cartridge ID</label>
+            <select name="cartridge_num" class="form-select shadow-sm rounded-3" required>
+              <option value="1">Cartridge 1</option>
+              <option value="2">Cartridge 2</option>
+              <option value="3">Cartridge 3</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Medicine Name</label>
+            <input type="text" name="medicine_name" class="form-control shadow-sm" placeholder="Enter medicine name" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Dosage (tablets per time)</label>
+            <input type="number" name="dosage" class="form-control shadow-sm" min="1" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Remaining Doses</label>
+            <input type="number" name="remaining" class="form-control shadow-sm" min="1" required>
+          </div>
+
+        </div>
+
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-plus-circle me-1"></i> Add Medicine
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!-- Update Time Modal -->
+<!-- Update Time Modal -->
+<!-- Update Time Modal -->
+<div class="modal fade" id="updateTimeModal" tabindex="-1" aria-labelledby="updateTimeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      
+      <div class="modal-header bg-gradient bg-success text-white">
+        <h5 class="modal-title fw-semibold" id="updateTimeModalLabel">
+          <i class="bi bi-clock-history me-2"></i> Update Medicine Times
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form id="updateTimeForm" action="{{ url_for('main.update_time') }}" method="POST">
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Medicine</label>
+            <select id="medicineSelect" name="medicine_id" class="form-select shadow-sm rounded-3" required>
+              <option value="">-- Select Medicine --</option>
+              {% for med in medicines %}
+                <option value="{{ med.id }}">{{ med.medicine_name }} (Cartridge {{ med.cartridge_id }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Dispense Time(s)</label>
+            <div id="timeInputs">
+              <!-- Times will be dynamically added here -->
+            </div>
+            <button type="button" id="addTimeBtn" class="btn btn-outline-success btn-sm mt-2">
+              <i class="bi bi-plus-circle"></i> Add Another Time
+            </button>
+          </div>
+
+        </div>
+
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-success rounded-pill px-4">
+            <i class="bi bi-save me-1"></i> Save Times
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const medicineSelect = document.getElementById('medicineSelect');
+    const timeInputsContainer = document.getElementById('timeInputs');
+    const addTimeBtn = document.getElementById('addTimeBtn');
+
+    // Function to create a time input row
+    function createTimeInputRow(time = '', cartridge_id = '') {
+        const row = document.createElement('div');
+        row.classList.add('d-flex', 'mb-2');
+
+        const input = document.createElement('input');
+        input.type = 'time';
+        input.name = 'dispense_times[]';
+        input.value = time;
+        input.classList.add('form-control', 'shadow-sm', 'me-2');
+        input.required = true;
+
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.classList.add('btn', 'btn-outline-danger', 'btn-sm');
+        removeBtn.textContent = '×';
+        removeBtn.addEventListener('click', () => row.remove());
+
+        row.appendChild(input);
+        row.appendChild(removeBtn);
+
+        return row;
+    }
+
+    // When medicine changes, fetch its times
+    medicineSelect.addEventListener('change', function () {
+        const medicineId = this.value;
+        timeInputsContainer.innerHTML = ''; // clear old inputs
+
+        if (!medicineId) return;
+
+        fetch(`/api/medicine_times/${medicineId}`)
+            .then(response => response.json())
+            .then(data => {
+                data.times.forEach(t => {
+                    const row = createTimeInputRow(t.time, t.cartridge_id);
+                    timeInputsContainer.appendChild(row);
+                });
+            })
+            .catch(err => console.error('Error fetching times:', err));
+    });
+
+    // Add new time manually
+    addTimeBtn.addEventListener('click', function () {
+        const row = createTimeInputRow();
+        timeInputsContainer.appendChild(row);
+    });
+
+    // Trigger change event on page load if needed
+    if (medicineSelect.value) {
+        medicineSelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+
+<script>
+function updateMedicines() {
+    fetch('/api/medicines')
+        .then(res => res.json())
+        .then(medicines => {
+            medicines.forEach(med => {
+                // Find the HTML element showing remaining quantity
+                const elem = document.getElementById('remaining-' + med.id);
+                if (elem) {
+                    elem.textContent = med.remaining_quantity;
+                }
+            });
+        })
+        .catch(err => console.error('Error fetching medicine data:', err));
+}
+
+// Poll every 5 seconds
+setInterval(updateMedicines, 5000);
+
+// Initial load
+updateMedicines();
+</script>
+
+
+
+
+
+
+
+<!-- Footer -->
+<div class="footer mb-3">
+  <p>© 2025 Medicine Reminder System | Powered by Flask & Bootstrap</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
