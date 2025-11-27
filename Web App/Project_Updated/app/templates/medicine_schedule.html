@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Medicine Schedule{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h4>Today's Medicine Schedule</h4>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>Cartridge ID</th>
+                <th>Medicine</th>
+                <th>Dosage</th>
+                <th>Time</th>
+                <th>Remaining</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for med in medicines %}
+              <tr data-medicine-id="{{ med.id }}">
+                <td>{{ med.cartridge_id }}</td>
+                <td>{{ med.medicine_name }}</td>
+                <td>{{ med.dosage }}</td>
+                <td>{{ med.time }}</td>
+                <td><span class="badge bg-info remaining-count">{{ med.remaining_quantity }}</span></td>
+                <td>
+                  <button class="btn btn-success btn-sm take-dose-btn" {% if med.remaining_quantity == 0 %}disabled{% endif %}>
+                    Take Dose
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+...
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/medicine_reminder.js') }}"></script>
+{% endblock %}  <-- ADD THIS LINE
